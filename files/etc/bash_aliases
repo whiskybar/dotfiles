@@ -1,0 +1,158 @@
+alias d="ls"
+alias l="ls"                    # classical listing.
+alias r="ls -tr"                # sort by timestamp, reverse
+alias ll="ls -l"                # List detailled.
+alias llh="ls -lh"              # List detailed with nice sizes
+alias la='ls -a'				# List all.
+alias lsd="ls -d */"            # List only the directory.
+alias cd..="cd .."
+alias s="cd .."
+alias p="cd -"
+
+alias md="mkdir"
+alias rd="rmdir"
+alias dff="df -h"
+alias duu='du -h'
+alias ack=ack-grep
+alias please='sudo !!'
+alias finda='find . -name'
+
+mkcd () { mkdir -p "$1" && cd "$1"; }
+
+alias grep="grep --exclude='*.pyc'"
+alias pcregrep="pcregrep -r --exclude='.*pyc|.*svn-base'"
+alias li="list_instances -H ID,Zone,Hostname,State,T:Name"
+
+mkcdpy () { mkdir -p "$1" && find . -f d -exec touch "{}/__init__.py" && cd "$1"; }
+dbrep() { SERVER=$1; shift; for b; do ssh $SERVER.panth.io btool converge -b $b; done; }
+sedr() { grep -rl "$1" | tee /dev/tty | xargs sed -i s/"$1"/"$2"/g; }
+alias anomalies='find . -type f -a ! -perm 644 -o -type d -a ! -perm 755 -o ! -user $(id -u) -o ! -group $(id -g) -ls'
+
+
+pano() { nano $(jq -j '[.tests[] | select(.outcome == "failed")] | first | .call.crash | "+" + (.lineno | tostring) + " " + .path' /tmp/pytest.json) "$@"; }
+cano() { nano $(xsel | sed 's/\([^:]*\):\([^:]*\).*/+\2 \1/') "$@"; }
+create() { mkdir -p $(dirname $1); nano "$1"; }
+
+alias k=kubectl
+alias kgp="kubectl get pods"
+alias kp="kubectl --context gke_pantheon-internal_us-central1_general-01 --namespace=production"
+alias kt="kubectl --context=gke_pantheon-sandbox_us-east4_sandbox-02 --namespace=template-sandbox"
+
+alias kj="kubectl --context gke_pantheon-sandbox_us-west2_sandbox-04 --namespace=sandbox-jiri"
+
+kds() {
+    kubectl get secret -o go-template='{{range $key, $value := .data}}{{$key}}{{"="}}{{$value | base64decode }}{{"\n"}}{{end}}' "$@"
+}
+
+kpds() {
+    kp get secret -o go-template='{{range $key, $value := .data}}{{$key}}{{"="}}{{$value | base64decode }}{{"\n"}}{{end}}' "$@"
+}
+
+alias ka="kubectl -n sandbox-ada --context=gke_pantheon-sandbox_us-east4_sandbox-02"
+
+kf() {
+	k get pod -l app=$1 -o jsonpath={.items[0].metadata.name}
+}
+
+kjf() {
+	kj get pod -l app=$1 -o jsonpath={.items[0].metadata.name}
+}
+kpf() {
+	kp get pod -l app=$1 -o jsonpath={.items[0].metadata.name}
+}
+
+
+kl() {
+# Usage: kl zuora-payment-service
+	APP=$1
+	POD=$(kf $APP)
+	APP=${POD%-*-*}
+	echo $APP in $POD
+	kubectl logs $POD -c $APP
+}
+
+kd() {
+# Usage: kd zuora-payment-service
+	APP=$1
+	POD=$(kf $APP)
+	APP=${POD%-*-*}
+	echo $POD
+	kubectl describe pod $POD
+}
+
+krm() {
+# Usage: krm zuora-payment-service
+	APP=$1
+	POD=$(kf $APP)
+	APP=${POD%-*-*}
+	echo $APP in $POD
+	kubectl delete pod $POD
+}
+
+kdj() {
+# Usage: kdj zuora-payment-service shell_plus
+	APP=$1
+	POD=$(kf $APP)
+	APP=${POD%-*-*}
+	echo $APP in $POD
+	shift
+	PKG=${APP%%-service}
+	PKG=${PKG//-/}
+	kubectl exec $POD -c $APP -ti -- .venv/bin/$APP "$@" --settings=$PKG.settings.kube_sandbox
+}
+
+kjdj() {
+# Usage: kdj zuora-payment-service shell_plus
+	APP=$1
+	POD=$(kjf $APP)
+	APP=${POD%-*-*}
+	echo $APP in $POD
+	shift
+	PKG=${APP%%-service}
+	PKG=${PKG//-/}
+	kj exec $POD -c $APP -ti -- .venv/bin/$APP "$@" --settings=$PKG.settings.kube_sandbox
+}
+
+kpdjp() {
+    POD=$1
+	PKG=${POD%%-service*}
+    APP=${PKG}-service
+	PKG=${PKG//-/}
+    shift
+    kp exec $POD -c $APP -ti -- .venv/bin/$APP "$@" --settings=$PKG.settings.kube_production
+}
+
+kpdj() {
+# Usage: kpdj zuora-payment-service shell_plus
+# Usage: kpdj zuora-payment-service trueups >/tmp/output.csv
+    APP=$1
+    POD=$(kpf $APP)
+    echo $APP in $POD
+    shift
+	PKG=${APP%%-service}
+	PKG=${PKG//-/}
+    kp exec $POD -c $APP -ti -- .venv/bin/$APP "$@" --settings=$PKG.settings.kube_production
+}
+
+kpsh() {
+    APP=$1
+    POD=$(kpf $APP)
+    echo $APP in $POD
+    shift
+	PKG=${APP%%-service}
+	PKG=${PKG//-/}
+    kp exec $POD -c $APP -ti -- /bin/sh
+}
+
+ks() {
+# Set the current context & namespace to use with `k` or `kubectl`
+# Usage: ks kubectl --namespace=sandbox-gcpm-service-pubsub-push --context=gke_pantheon-sandbox_us-west1_sandbox-03
+   CONTEXT_ARG=$(echo $* | tr ' ' '\n' | grep gke_pantheon)
+   CONTEXT=${CONTEXT_ARG##*=}
+   NAMESPACE_ARG=$(echo $* | tr ' ' '\n' | grep -v gke_pantheon | awk '{ print length, $0 }' | sort -n -s | cut -d" " -f2- | tail -1)
+   NAMESPACE=${NAMESPACE_ARG##*=}
+   kubectl config set-context $CONTEXT --namespace=$NAMESPACE
+   kubectl config use-context $CONTEXT --namespace=$NAMESPACE
+   echo Set context to "$CONTEXT"
+   echo Set namespace to "$NAMESPACE"
+}

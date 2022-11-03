@@ -1,0 +1,10 @@
+{
+    "name": "switch2",
+    "description": "Find and switch to running applications with shortcuts in Gnome Shell",
+    "uuid": "switch2@whiskybar",
+    "url": "https://github.com/whiskybar/switch2",
+    "shell-version": [
+        "40",
+        "41"
+    ]
+}
